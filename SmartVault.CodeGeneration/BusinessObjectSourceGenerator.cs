@@ -26,6 +26,7 @@ namespace SmartVault.CodeGeneration
                 var businessObjectModel = (BusinessObject)serializer.Deserialize(reader);
 
                 string propertiesString = "";
+
                 for (int j = 0; j < businessObjectModel.PropertyGroup.Property.Count; j++)
                 {
                     var property = businessObjectModel.PropertyGroup.Property[j];
