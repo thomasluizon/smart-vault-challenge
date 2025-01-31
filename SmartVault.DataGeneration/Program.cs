@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using SmartVault.Library;
+using SmartVault.CodeGeneration;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
