@@ -1,0 +1,8 @@
+This is my test document
+Some important data here
+Another random line
+Smith Property
+More text that doesn't contain it
+Yet another piece of content
+Smith Property appears again later in the document
+Final line of the document

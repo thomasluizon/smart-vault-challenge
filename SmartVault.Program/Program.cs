@@ -16,8 +16,10 @@ namespace SmartVault.Program
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            string databaseFile = configuration["DatabaseFileName"];
-            string connectionString = configuration["ConnectionStrings:DefaultConnection"];
+            string projectRoot = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.Parent.FullName;
+
+            string databaseFile = Path.Combine(projectRoot, configuration["DatabaseFileName"]);
+            string connectionString = configuration["ConnectionStrings:DefaultConnection"].Replace("{DatabaseFilePath}", databaseFile);
 
             Console.WriteLine($"Database file path: {databaseFile}");
 
@@ -39,18 +41,17 @@ namespace SmartVault.Program
 
             string accountId = args[0];
 
-            WriteEveryThirdFileToFile(accountId, connection);
+            WriteEveryThirdFileToFile(accountId, connection, projectRoot);
             GetAllFileSizes(connection);
         }
 
         private static void GetAllFileSizes(SQLiteConnection connection)
         {
             var totalSize = connection.Query<long>("SELECT SUM(Length) FROM Document").FirstOrDefault();
-
             Console.WriteLine($"Total size of all files: {totalSize} bytes");
         }
 
-        private static void WriteEveryThirdFileToFile(string accountId, SQLiteConnection connection)
+        private static void WriteEveryThirdFileToFile(string accountId, SQLiteConnection connection, string projectRoot)
         {
             var filePaths = connection.Query<string>(
                 "SELECT FilePath FROM Document WHERE AccountId = @AccountId",
@@ -64,7 +65,7 @@ namespace SmartVault.Program
 
             Console.WriteLine($"Total files found for AccountId {accountId}: {filePaths.Count}");
 
-            string outputFilePath = $"Consolidated_{accountId}.txt";
+            string outputFilePath = Path.Combine(projectRoot, $"Consolidated_{accountId}.txt");
             bool hasMatchingFiles = false;
 
             using (var writer = new StreamWriter(outputFilePath))

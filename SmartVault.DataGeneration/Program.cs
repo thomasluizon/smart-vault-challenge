@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
-using System.Linq;
 using System.Xml.Serialization;
 
 namespace SmartVault.DataGeneration
@@ -19,7 +18,8 @@ namespace SmartVault.DataGeneration
                 .AddJsonFile("appsettings.json")
                 .Build();
 
-            string databaseFile = configuration["DatabaseFileName"];
+            string projectRoot = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.Parent.FullName;
+            string databaseFile = Path.Combine(projectRoot, configuration["DatabaseFileName"]);
 
             Console.WriteLine($"Database file path: {databaseFile}");
 
@@ -33,7 +33,7 @@ namespace SmartVault.DataGeneration
             SQLiteConnection.CreateFile(databaseFile);
             Console.WriteLine("Database created successfully.");
 
-            string connectionString = configuration["ConnectionStrings:DefaultConnection"];
+            string connectionString = configuration["ConnectionStrings:DefaultConnection"].Replace("{DatabaseFilePath}", databaseFile);
             Console.WriteLine($"Using connection string: {connectionString}");
 
             using var connection = new SQLiteConnection(connectionString);
@@ -49,13 +49,9 @@ namespace SmartVault.DataGeneration
             }
 
             Console.WriteLine("Inserting test data...");
-            InsertTestData(connection);
+            InsertTestData(connection, projectRoot);
             Console.WriteLine("Test data inserted successfully.");
-
-            Console.WriteLine("Database setup complete.");
         }
-
-
 
         static void CreateTables(SQLiteConnection connection, SQLiteTransaction transaction)
         {
@@ -63,7 +59,7 @@ namespace SmartVault.DataGeneration
 
             if (files.Length == 0)
             {
-                Console.WriteLine("No schema files found in BusinessObjects directory.");
+                Console.WriteLine("No schema files found in BusinessObjectSchema directory.");
                 return;
             }
 
@@ -93,19 +89,10 @@ namespace SmartVault.DataGeneration
                     Console.WriteLine($"Invalid schema file: {file}");
                 }
             }
-
-            var tables = connection.Query<string>("SELECT name FROM sqlite_master WHERE type='table';").ToList();
-            Console.WriteLine("Database tables created:");
-            foreach (var table in tables)
-            {
-                Console.WriteLine($"- {table}");
-            }
         }
 
-
-        static void InsertTestData(SQLiteConnection connection)
+        static void InsertTestData(SQLiteConnection connection, string baseDirectory)
         {
-            string baseDirectory = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).FullName;
             string testDocumentPath = Path.Combine(baseDirectory, "TestDoc.txt");
 
             Console.WriteLine($"Creating test document at: {testDocumentPath}");
