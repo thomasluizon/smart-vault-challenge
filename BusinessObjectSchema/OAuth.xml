@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<businessObject>
+    <propertyGroup>
+        <property name="Id" type="int" />
+        <property name="ClientId" type="string" />
+        <property name="ClientSecret" type="string" />
+        <property name="ProviderName" type="string" />
+        <property name="RedirectUri" type="string" />
+    </propertyGroup>
+    <script>
+        CREATE TABLE OAuth (
+            Id INTEGER PRIMARY KEY,
+            ClientId TEXT,
+            ClientSecret TEXT,
+            ProviderName TEXT,
+            RedirectUri TEXT
+        );
+    </script>
+</businessObject>

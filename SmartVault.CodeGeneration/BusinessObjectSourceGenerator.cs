@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using System;
 using System.IO;
+using System.Linq;
 using System.Xml.Serialization;
 
 namespace SmartVault.CodeGeneration
@@ -12,9 +13,10 @@ namespace SmartVault.CodeGeneration
         {
             var mainMethod = context.Compilation.GetEntryPoint(context.CancellationToken);
 
-            for (int i = 0; i < 3; i++)
+            var businessObjectFiles = context.AdditionalFiles.Where(f => f.Path.EndsWith(".xml")).ToList();
+
+            foreach (var file in businessObjectFiles)
             {
-                var file = context.AdditionalFiles[i];
                 var fileContents = file.GetText().ToString();
 
                 var serializer = new XmlSerializer(typeof(BusinessObject));
