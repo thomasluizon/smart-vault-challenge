@@ -47,8 +47,38 @@ namespace SmartVault.Program
 
         private static void GetAllFileSizes(SQLiteConnection connection)
         {
-            var totalSize = connection.Query<long>("SELECT SUM(Length) FROM Document").FirstOrDefault();
-            Console.WriteLine($"Total size of all files: {totalSize} bytes");
+            Console.WriteLine("Calculating real file sizes...");
+
+            var filePaths = connection.Query<string>("SELECT FilePath FROM Document").ToList();
+
+            if (filePaths.Count == 0)
+            {
+                Console.WriteLine("No files found in the database.");
+                return;
+            }
+
+            long totalSize = 0;
+            int missingFiles = 0;
+
+            foreach (var filePath in filePaths)
+            {
+                if (File.Exists(filePath))
+                {
+                    long fileSize = new FileInfo(filePath).Length;
+                    totalSize += fileSize;
+                }
+                else
+                {
+                    missingFiles++;
+                }
+            }
+
+            Console.WriteLine($"Total actual file size: {totalSize} bytes");
+
+            if (missingFiles > 0)
+            {
+                Console.WriteLine($"Warning: {missingFiles} files were missing and not included in the total size.");
+            }
         }
 
         private static void WriteEveryThirdFileToFile(string accountId, SQLiteConnection connection, string projectRoot)
