@@ -9,9 +9,9 @@ using System.Xml.Serialization;
 
 namespace SmartVault.DataGeneration
 {
-    partial class Program
+    public partial class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -53,7 +53,7 @@ namespace SmartVault.DataGeneration
             Console.WriteLine("Test data inserted successfully.");
         }
 
-        static void CreateTables(SQLiteConnection connection, SQLiteTransaction transaction)
+        public static void CreateTables(SQLiteConnection connection, SQLiteTransaction transaction)
         {
             var files = Directory.GetFiles(@"..\..\..\..\BusinessObjectSchema");
 
@@ -91,7 +91,7 @@ namespace SmartVault.DataGeneration
             }
         }
 
-        static void InsertTestData(SQLiteConnection connection, string baseDirectory)
+        public static void InsertTestData(SQLiteConnection connection, string baseDirectory)
         {
             string testDocumentPath = Path.Combine(baseDirectory, "TestDoc.txt");
 
@@ -147,7 +147,7 @@ namespace SmartVault.DataGeneration
             PrintSummary(connection);
         }
 
-        static void PrintSummary(SQLiteConnection connection)
+        public static void PrintSummary(SQLiteConnection connection)
         {
             var accountData = connection.Query<int>("SELECT COUNT(*) FROM Account;").AsList()[0];
             Console.WriteLine($"AccountCount: {accountData}");
@@ -159,7 +159,7 @@ namespace SmartVault.DataGeneration
             Console.WriteLine($"UserCount: {userData}");
         }
 
-        static DateTime GetRandomDate()
+        public static DateTime GetRandomDate()
         {
             var gen = new Random();
             var start = new DateTime(1985, 1, 1);
