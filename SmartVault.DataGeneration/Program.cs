@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using SmartVault.CodeGeneration;
 using System;
 using System.Collections.Generic;
@@ -16,54 +15,114 @@ namespace SmartVault.DataGeneration
         static void Main(string[] args)
         {
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json").Build();
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appsettings.json")
+                .Build();
 
             string databaseFile = configuration["DatabaseFileName"];
 
-            if (File.Exists(databaseFile))
-                File.Delete(databaseFile);
+            Console.WriteLine($"Database file path: {databaseFile}");
 
+            if (File.Exists(databaseFile))
+            {
+                Console.WriteLine("Database already exists. Deleting...");
+                File.Delete(databaseFile);
+            }
+
+            Console.WriteLine("Creating new database...");
             SQLiteConnection.CreateFile(databaseFile);
-            string connectionString = string.Format(configuration["ConnectionStrings:DefaultConnection"] ?? "", databaseFile);
+            Console.WriteLine("Database created successfully.");
+
+            string connectionString = configuration["ConnectionStrings:DefaultConnection"];
+            Console.WriteLine($"Using connection string: {connectionString}");
 
             using var connection = new SQLiteConnection(connectionString);
             connection.Open();
+            Console.WriteLine("Database connection opened.");
 
             using (var transaction = connection.BeginTransaction())
             {
+                Console.WriteLine("Creating tables...");
                 CreateTables(connection, transaction);
                 transaction.Commit();
+                Console.WriteLine("Tables created successfully.");
             }
 
+            Console.WriteLine("Inserting test data...");
             InsertTestData(connection);
+            Console.WriteLine("Test data inserted successfully.");
+
+            Console.WriteLine("Database setup complete.");
         }
+
+
 
         static void CreateTables(SQLiteConnection connection, SQLiteTransaction transaction)
         {
             var files = Directory.GetFiles(@"..\..\..\..\BusinessObjectSchema");
 
+            if (files.Length == 0)
+            {
+                Console.WriteLine("No schema files found in BusinessObjects directory.");
+                return;
+            }
+
             foreach (var file in files)
             {
+                Console.WriteLine($"Processing schema file: {file}");
+
                 var serializer = new XmlSerializer(typeof(BusinessObject));
-                var businessObject = serializer.Deserialize(new StreamReader(file)) as BusinessObject;
+                using var reader = new StreamReader(file);
+                var businessObject = serializer.Deserialize(reader) as BusinessObject;
 
                 if (businessObject?.Script != null)
                 {
-                    connection.Execute(businessObject.Script, transaction: transaction);
+                    Console.WriteLine($"Executing SQL script from {file}");
+
+                    try
+                    {
+                        connection.Execute(businessObject.Script, transaction: transaction);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error executing script from {file}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"Invalid schema file: {file}");
                 }
             }
 
-            connection.Execute("CREATE INDEX idx_document_account ON Document(AccountId);", transaction: transaction);
-            connection.Execute("CREATE INDEX idx_user_account ON User(AccountId);", transaction: transaction);
+            var tables = connection.Query<string>("SELECT name FROM sqlite_master WHERE type='table';").ToList();
+            Console.WriteLine("Database tables created:");
+            foreach (var table in tables)
+            {
+                Console.WriteLine($"- {table}");
+            }
         }
+
 
         static void InsertTestData(SQLiteConnection connection)
         {
-            string testDocumentContent = "This is my test document\n";
-            string testDocumentPath = "TestDoc.txt";
+            string baseDirectory = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).FullName;
+            string testDocumentPath = Path.Combine(baseDirectory, "TestDoc.txt");
 
-            File.WriteAllText(testDocumentPath, string.Concat(Enumerable.Repeat(testDocumentContent, 100)));
+            Console.WriteLine($"Creating test document at: {testDocumentPath}");
+
+            var lines = new List<string>
+            {
+                "This is my test document",
+                "Some important data here",
+                "Another random line",
+                "Smith Property",
+                "More text that doesn't contain it",
+                "Yet another piece of content",
+                "Smith Property appears again later in the document",
+                "Final line of the document"
+            };
+
+            File.WriteAllText(testDocumentPath, string.Join("\n", lines));
 
             int documentNumber = 0;
 
@@ -97,6 +156,7 @@ namespace SmartVault.DataGeneration
                 transaction.Commit();
             }
 
+            Console.WriteLine($"Test document successfully created: {testDocumentPath}");
             PrintSummary(connection);
         }
 
